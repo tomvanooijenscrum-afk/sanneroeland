@@ -1,4 +1,4 @@
-const header = document.querySelector('.header');
+﻿
 const menu = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('#navigation');
 
@@ -41,7 +41,7 @@ function preparePhoto(img) {
 const figures = [...document.querySelectorAll('.portfolio-item')];
 const photos = figures.map(figure => ({
   image: figure.querySelector('img').cloneNode(true),
-  caption: figure.querySelector('figcaption span').textContent,
+  caption: figure.querySelector('h3').textContent,
 }));
 document.querySelectorAll('img').forEach(preparePhoto);
 
@@ -103,17 +103,6 @@ dialog.addEventListener('keydown', event => {
   }
 });
 
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-let frame = 0;
-function updateScroll() {
-  header.classList.toggle('scrolled', window.scrollY > 20);
-  document.querySelector('.hero').style.setProperty('--parallax',
-    !reducedMotion.matches && window.innerWidth > 900 ? `${Math.min(window.scrollY * 0.045, 22)}px` : '0px');
-  frame = 0;
-}
-window.addEventListener('scroll', () => {
-  if (!frame) frame = requestAnimationFrame(updateScroll);
-}, { passive: true });
-window.addEventListener('resize', updateScroll);
-reducedMotion.addEventListener('change', updateScroll);
-updateScroll();
+// Keep the footer current each year.
+document.querySelector('#year').textContent = new Date().getFullYear();
+
