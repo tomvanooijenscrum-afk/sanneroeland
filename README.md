@@ -1,28 +1,31 @@
 ﻿# Sanne Roeland — fotografie
 
-Een gewone website met HTML, CSS en JavaScript. Geen installatie, build of lokale server nodig.
+Een rustige, redactionele fotografiewebsite, geïnspireerd op de beeldpresentatie en typografie van https://www.daniloandsharon.com/. Gebouwd met gewone HTML, CSS en JavaScript.
 
 ## Bekijken
 
-Dubbelklik op `index.html` om de website in je browser te openen.
+Open `index.html` in je browser. Installatie of een server is niet nodig.
 
 ## Aanpassen
 
-- Teksten, links en fotobeschrijvingen staan in `index.html`.
-- Kleuren, lettertypen en afstanden staan in `styles.css`.
-- Het mobiele menu en de fotoviewer staan in `script.js`.
-- Plaats het originele portret in `images/sanne-portret.jpg`. Tot die tijd verschijnen ontworpen monogramvlakken in blauw, terracotta en groen. De portfoliofoto's gebruiken voorlopig hetzelfde portret.
-- Vervang voor eigen portfoliofoto's de afbeeldingspaden, alt-teksten en bijschriften in `index.html`. Pas ook de melding over tijdelijke foto's aan en verwijder ` · Tijdelijk beeld` uit `script.js` zodra de echte foto's zijn toegevoegd.
+- `index.html`: teksten, navigatie, afbeeldingen en bijschriften.
+- `styles.css`: gedeelde kleuren en lettertypen bovenaan, daarna stijlen per onderdeel. De mobiele aanpassingen staan onderaan.
+- `script.js`: mobiel menu, afbeeldingsfallbacks, fotoviewer en automatisch jaartal.
+- `images/sanne-portret.jpg`: het aangeleverde originele portret van Sanne. Als een afbeeldingsbestand ontbreekt, toont de website een neutraal monogramvlak. De selectie gebruikt voorlopig hetzelfde portret in verschillende uitsneden.
+
+Vervang de afbeeldingspaden, beschrijvingen en bijschriften in de portfolio zodra er meer eigen foto's zijn. Pas ook de tijdelijke melding in de pagina en `Tijdelijk beeld` in `script.js` aan.
 
 ## Online zetten
 
-Upload `index.html`, `styles.css`, `script.js`, `favicon.svg` en de map `images` naar je webhosting. De website werkt ook in een submap.
+Upload `index.html`, `styles.css`, `script.js`, `favicon.svg` en `images/` naar je hosting. De website werkt ook in een submap.
 
-Google Fonts worden via internet geladen; zonder internet gebruikt de browser vervangende lettertypen. De inhoud is ook zonder JavaScript leesbaar.
+Optioneel: `npm run build` kopieert deze bestanden naar `dist/`. De oorspronkelijke React-bestanden in `src/` zijn alleen bewaard als referentie.
 
-De oorspronkelijke React/Vite-bestanden zijn bewaard als referentie. Voor deze statische versie hoef je ze niet te gebruiken of te uploaden.
+Google Fonts worden via internet geladen. Zonder verbinding gebruikt de website de ingebouwde vervangende lettertypen.
 
-## Vormgeving
 
-De website gebruikt nachtblauw, limoen en gebroken wit. De gedeelde kleuren en afstanden staan bovenaan styles.css. De CSS is per onderdeel gegroepeerd: navigatie, opening, portfolio, illustraties, fotoviewer en mobiele weergave. De illustraties worden met CSS gemaakt; er zijn geen extra afbeeldingsbestanden voor nodig.
+## Animaties
 
+Beweging staat standaard aan. De opening speelt één keer bij het laden. Daarna volgt elke onthulling de scrollpositie: omlaag schuiven tekst en beelden in beeld, omhoog draait hetzelfde effect vloeiend terug. Er wordt geen animatie opnieuw gestart bij het passeren van een grens.
+
+De animatiecode staat onderaan `script.js`. `applyProgress` bepaalt de beweging en `updateScrollMotion` bepaalt de voortgang vanuit de viewport. Posities worden eerst samen gelezen, daarna worden de stijlen bijgewerkt in één animation frame. De knop onderaan speelt de opening opnieuw af. Zonder JavaScript blijft de inhoud zichtbaar.

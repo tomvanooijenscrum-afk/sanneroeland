@@ -1,4 +1,14 @@
-﻿
+// Refresh starts at the opening instead of restoring a previous scroll or anchor.
+const isRefresh = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+if (isRefresh) {
+  history.scrollRestoration = 'manual';
+  if (location.hash) history.replaceState(history.state, '', location.href.split('#')[0]);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  window.addEventListener('pageshow', () => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, { once: true });
+}
+
 const menu = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('#navigation');
 
@@ -106,3 +116,135 @@ dialog.addEventListener('keydown', event => {
 // Keep the footer current each year.
 document.querySelector('#year').textContent = new Date().getFullYear();
 
+
+// Motion follows scroll position instead of restarting timed animations.
+const motionTargets = [];
+let scrollFrame = 0;
+const entranceAnimations = [];
+
+function addReveal(element, style = 'up', delay = 0) {
+  element.classList.add('reveal');
+  element.dataset.reveal = style;
+  element.dataset.delay = delay;
+  motionTargets.push(element);
+}
+
+// Keep the original text and emphasis intact when grouping heading lines.
+document.querySelectorAll('main h2, .statement-title').forEach(heading => {
+  const nodes = [...heading.childNodes];
+  heading.replaceChildren();
+  let line = document.createElement('span');
+  line.className = 'heading-line';
+  heading.append(line);
+  nodes.forEach(node => {
+    if (node.nodeName === 'BR') {
+      line = document.createElement('span');
+      line.className = 'heading-line';
+      heading.append(line);
+    } else {
+      line.append(node);
+    }
+  });
+  [...heading.children].forEach((element, index) => addReveal(element, 'up', index * 220));
+});
+
+addReveal(document.querySelector('.header'), 'down');
+addReveal(document.querySelector('.hero-image'), 'portrait', 100);
+addReveal(document.querySelector('.hero-copy > p'), 'up', 180);
+[...document.querySelector('h1').children].forEach((line, index) => addReveal(line, 'up', 450 + index * 240));
+addReveal(document.querySelector('.hero-bottom'), 'up', 1000);
+
+// Each group is staggered locally, so scrolling never starts a long queue.
+const textGroups = [
+  '.intro > .eyebrow', '.intro-bottom > *', '.section-heading > div > *',
+  '.portfolio-note > *', '.statement > .eyebrow', '.statement > .text-link',
+  '.about-copy > p, .about-copy > a', '.contact > .eyebrow',
+  '.contact-bottom > *', 'footer > *',
+];
+textGroups.forEach(selector => {
+  document.querySelectorAll(selector).forEach((element, index) => addReveal(element, 'up', (index % 3) * 170));
+});
+figures.forEach((figure, index) => {
+  addReveal(figure.querySelector('.photo-button'), index % 2 ? 'right' : 'left');
+  addReveal(figure.querySelector('figcaption'), 'up', 160);
+});
+addReveal(document.querySelector('.about-photo'), 'left');
+
+
+// The opening plays once. Everything below it follows scroll continuously.
+const openingTargets = motionTargets.filter(element => element.closest('.hero, .header'));
+const scrollTargets = motionTargets.filter(element => !openingTargets.includes(element));
+const previousY = new WeakMap();
+
+function applyProgress(element, progress) {
+  const remaining = 1 - progress;
+  const direction = element.dataset.reveal;
+  const x = direction === 'left' ? -60 * remaining : direction === 'right' ? 60 * remaining : 0;
+  const y = direction === 'up' ? 65 * remaining : 0;
+  previousY.set(element, y);
+  element.style.opacity = String(progress);
+  element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  element.style.clipPath = ['left', 'right'].includes(direction)
+    ? `inset(0 ${direction === 'left' ? 14 * remaining : 0}% 0 ${direction === 'right' ? 14 * remaining : 0}%)`
+    : 'none';
+}
+
+function updateScrollMotion() {
+  scrollFrame = 0;
+  const viewportHeight = window.innerHeight;
+  const maximumScroll = Math.max(0, document.documentElement.scrollHeight - viewportHeight);
+  // Read all positions first, then write styles to avoid repeated layout work.
+  const positions = scrollTargets.map(element => ({
+    element,
+    top: element.getBoundingClientRect().top + window.scrollY - (previousY.get(element) || 0),
+  }));
+  positions.forEach(({ element, top }) => {
+    const stagger = Number(element.dataset.delay) * .12;
+    const end = Math.min(top - viewportHeight * .63 + stagger, maximumScroll);
+    const start = Math.min(top - viewportHeight * .96 + stagger, end - 100);
+    let progress = Math.max(0, Math.min(1, (window.scrollY - start) / Math.max(1, end - start)));
+    // Keep a focused control visible, even near the edge of the screen.
+    if (element.contains(document.activeElement)) progress = 1;
+    const eased = progress * progress * (3 - 2 * progress);
+    applyProgress(element, eased);
+  });
+}
+
+function scheduleScrollMotion() {
+  if (!scrollFrame) scrollFrame = requestAnimationFrame(updateScrollMotion);
+}
+
+function playOpening() {
+  entranceAnimations.forEach(animation => animation.cancel());
+  entranceAnimations.length = 0;
+  openingTargets.forEach(element => {
+    const portrait = element.dataset.reveal === 'portrait';
+    const animation = element.animate([
+      { opacity: 0, transform: portrait ? 'scale(1.06)' : 'translateY(45px)' },
+      { opacity: 1, transform: 'none' },
+    ], {
+      duration: portrait ? 1800 : 1300,
+      delay: Number(element.dataset.delay),
+      easing: 'cubic-bezier(.25, .1, .25, 1)',
+      fill: 'backwards',
+    });
+    entranceAnimations.push(animation);
+  });
+}
+
+function configureMotion(playEntrance = false) {
+  updateScrollMotion();
+  if (playEntrance) playOpening();
+}
+window.addEventListener('scroll', scheduleScrollMotion, { passive: true });
+window.addEventListener('resize', scheduleScrollMotion);
+document.addEventListener('focusin', scheduleScrollMotion);
+document.addEventListener('focusout', scheduleScrollMotion);
+// Image and font loading can shift positions without a scroll event.
+window.addEventListener('load', scheduleScrollMotion);
+document.fonts?.ready.then(scheduleScrollMotion);
+document.querySelector('.motion-replay').addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  configureMotion(true);
+});
+configureMotion(true);
